@@ -1,0 +1,123 @@
+﻿@page "/show-recipes/{Path}/{Id}/{Text}/{Page:int}"
+@page "/show-recipes/{Path}/{Text}/{Page:int}"
+@inject IRecipeService RecipeService
+@inject ILogger<MultipleRecipesPage> Logger
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+@if(isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading recipes. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9 text-center">
+                @if (recipes is not null && recipes.Count > 0)
+                {
+                    <RecipeList Recipes="@recipes" Text="@Text" />
+                        <Pagination TotalItems="@totalNumberOfRecipes" CurrentPage="@Page" OnPageChanged="HandlePageChanged" />
+                    }
+                else
+                {
+                    <p>There are no recipes to display.</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Recipe> recipes = [];
+    private bool isLoading = true;
+    private bool loadError = false;
+
+
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Path { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter]
+    public int Page { get; set; } = 1;
+
+    private List<string> Ingredients = [];
+    private long totalNumberOfRecipes = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadRecipes();
+    }
+
+    private async Task LoadRecipes()
+    {
+        try
+        {
+            isLoading = true;
+            if (Path == nameof(Category).ToLower() && !string.IsNullOrWhiteSpace(Id))
+            {
+                recipes = await RecipeService.GetRecipesByCategory(Id, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByCategory(Id);
+            }
+            else if (Path == nameof(Cuisine).ToLower() && !string.IsNullOrWhiteSpace(Id))
+            {
+                recipes = await RecipeService.GetRecipesByCuisine(Id, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByCuisine(Id);
+            }
+            else if (Path == nameof(Diet).ToLower() && !string.IsNullOrWhiteSpace(Id))
+            {
+                recipes = await RecipeService.GetRecipesByDiet(Id, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByDiet(Id);
+            }
+            else if (Path == nameof(Method).ToLower() && !string.IsNullOrWhiteSpace(Id))
+            {
+                recipes = await RecipeService.GetRecipesByMethod(Id, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByMethod(Id);
+            }
+            else if (Path == nameof(Recipe).ToLower() && !string.IsNullOrWhiteSpace(Text))
+            {
+                recipes = await RecipeService.GetRecipesByName(Text, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByName(Text);
+            }
+            else if (Path == "ingredients" && !string.IsNullOrWhiteSpace(Text))
+            {
+                Ingredients = Text.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? [];
+                recipes = await RecipeService.GetRecipesByIngredients(Ingredients, Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+                totalNumberOfRecipes = await RecipeService.GetNumberOfRecipesByIngredients(Ingredients);
+                Text = "Find recipes by ingredients";
+            }
+
+            if (recipes is null)
+                throw new NullReferenceException();
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while loading recipes.");
+            loadError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        Page = page;
+        await LoadRecipes();
+    }
+
+}

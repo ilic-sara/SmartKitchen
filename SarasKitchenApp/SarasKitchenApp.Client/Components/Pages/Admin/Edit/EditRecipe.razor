@@ -1,0 +1,387 @@
+﻿@page "/admin/edit-recipe/{Id}"
+@inject RecipeApiService RecipeApiService
+@inject CategoryApiService CategoryApiService
+@inject CuisineApiService CuisineApiService
+@inject DietApiService DietApiService
+@inject MethodApiService MethodApiService
+@inject NavigationManager NavigationManager
+@inject ILogger<EditRecipe> Logger
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <h3>@errorMessage</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-10 col-md-9 col-lg-8">
+                <div class="card p-4">
+                    <EditForm Model="recipe" OnValidSubmit="HandleValidSubmit" FormName="editRecipe" class="form-control">
+                        <div class="row justify-content-center text-center my-3">
+                            <h3>Edit recipe @recipe.Name</h3>
+                            <hr />
+                            <div class="form-group my-2 mt-3">
+                                <label for="name"><strong><em>Name</em></strong></label>
+                                <InputText id="name" class="form-control" @bind-Value="recipe.Name" />
+                            </div>
+                            <div class="form-group my-2">
+                                <ImageUpload OnImageUploaded="HandleImageUploaded" />
+                            </div>
+                            <div class="row my-2 mb-3">
+                                <div class="form-group col-6">
+                                    <label for="servings"><strong><em>Servings</em></strong></label>
+                                    <InputNumber id="servings" class="form-control" @bind-Value="recipe.Servings" />
+                                </div>
+
+                                <div class="form-group col-6">
+                                    <label for="prepTime"><strong><em>Prep time</em></strong></label>
+                                    <InputText id="prepTime" class="form-control" @bind-Value="recipe.PrepTime" />
+                                </div>
+                            </div>
+                            <hr />
+                            <div class="row text-start my-2">
+                                @if (methods is null)
+                                {
+                                    <h4>Loading...</h4>
+                                }
+                                else
+                                {
+                                    <div class="col-12 col-sm-6 col-lg-3 form-group p-4">
+                                        <label><strong><em>Categories</em></strong></label>
+                                        @foreach (var category in categories)
+                                        {
+                                            <div>
+                                                <input type="checkbox" value="@category.Id" checked="@SelectedCategories.Contains(category.Id)" @onchange="e => UpdateSelectedCategories(category, e)" id="@category.Id"/>
+                                                <label for="@category.Id">@category.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-lg-3 form-group p-4">
+                                        <label><strong><em>Cuisines</em></strong></label>
+                                        @foreach (var cuisine in cuisines)
+                                        {
+                                            <div>
+                                                <input type="checkbox" value="@cuisine.Id" checked="@SelectedCuisines.Contains(cuisine.Id)" @onchange="e => UpdateSelectedCuisines(cuisine, e)" id="@cuisine.Id"/>
+                                                <label for="@cuisine.Id">@cuisine.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-lg-3 form-group p-4">
+                                        <label><strong><em>Diets</em></strong></label>
+                                        @foreach (var diet in diets)
+                                        {
+                                            <div>
+                                                <input type="checkbox" value="@diet.Id" checked="@SelectedDiets.Contains(diet.Id)" @onchange="e => UpdateSelectedDiets(diet, e)" id="@diet.Id"/>
+                                                <label for="@diet.Id">@diet.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-lg-3 form-group p-4">
+                                        <label><strong><em>Methods</em></strong></label>
+                                        @foreach (var method in methods)
+                                        {
+                                            <div>
+                                                <input type="checkbox" value="@method.Id" checked="@SelectedMethods.Contains(method.Id)" @onchange="e => UpdateSelectedMethods(method, e)" id="@method.Id"/>
+                                                <label for="@method.Id">@method.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                            </div>
+                            <hr />
+                            <div class="form-group my-3">
+                                <label><strong><em>Ingredients</em></strong></label>
+                                <div class="row mt-1">
+                                    <div class="col-4 col-lg-2">
+                                        <InputText placeholder="Amount" @bind-Value="ingredientAmount" class="form-control m-1" />
+                                    </div>
+                                    <div class="col-8 col-lg-4">
+                                        <InputSelect @bind-Value="ingredientUnitType" class="form-select m-1">
+                                            <option value="">-- Select Unit --</option>
+                                            @foreach (var unit in Enum.GetValues<UnitType>())
+                                            {
+                                                <option value="@unit">@unit</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                    <div class="col-8 col-lg-4">
+                                        <InputText placeholder="Name" @bind-Value="ingredientName" class="form-control m-1" />
+                                    </div>
+                                    <div class="col-4 col-lg-2">
+                                        <button type="button" @onclick="AddIngredient" class="btn green-btn-secondary w-100 m-1">Add</button>
+                                    </div>
+
+
+                                </div>
+                                <ul class="text-start">
+                                    @foreach (var ingredient in recipe.Ingredients)
+                                    {
+                                        <li>
+                                            <button type="button" @onclick="() => RemoveIngredient(ingredient)" class="btn btn-danger m-1 p-1 py-0">x</button>
+                                            @ingredient.Amount @ingredient.UnitType @ingredient.Name
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                            <hr />
+                            <div class="form-group my-3">
+                                <label><strong><em>Steps</em></strong></label>
+                                <div class=" mt-1">
+                                    <InputTextArea class="form-control" @bind-Value="stepInput" />
+                                    <button type="button" @onclick="AddStep" class="btn green-btn-secondary my-2">Add step</button>
+                                </div>
+                                <ol class="text-start">
+                                    @foreach (var step in recipe.Steps)
+                                    {
+                                        <li>
+                                            <button type="button" @onclick="() => RemoveStep(step)" class="btn btn-danger m-1 p-1 py-0">x</button>
+                                            @step
+                                        </li>
+                                    }
+                                </ol>
+                            </div>
+                            <hr />
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            <button type="submit" class="btn green-btn w-auto my-3">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Recipe recipe = new();
+    private bool isLoading = true;
+    private string errorMessage = string.Empty;
+    private string ingredientAmount = string.Empty;
+    private string ingredientName = string.Empty;
+    private UnitType? ingredientUnitType;
+    private string stepInput = string.Empty;
+    private List<Category> categories = [];
+    private List<Cuisine> cuisines = [];
+    private List<Diet> diets = [];
+    private List<Method> methods = [];
+
+    private HashSet<string> SelectedCategories = [];
+    private HashSet<string> SelectedCuisines = [];
+    private HashSet<string> SelectedDiets = [];
+    private HashSet<string> SelectedMethods = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                errorMessage = "Error loading recipe. Id is null.";
+                isLoading = false;
+                Logger.LogError(errorMessage);
+                return;
+            }
+            try
+            {
+                recipe = await RecipeApiService.GetRecipeByIdAsync(Id);
+                if (recipe is null)
+                {
+                    Logger.LogError($"Recipe with Id {Id} was not found.");
+                }
+                else
+                {
+                    var categoriesTask = CategoryApiService.GetCategoriesAsync();
+                    var cuisinesTask = CuisineApiService.GetCuisinesAsync();
+                    var dietsTask = DietApiService.GetDietsAsync();
+                    var methodsTask = MethodApiService.GetMethodsAsync();
+
+                    await Task.WhenAll(categoriesTask, cuisinesTask, dietsTask, methodsTask);
+
+                    categories = await categoriesTask;
+                    cuisines = await cuisinesTask;
+                    diets = await dietsTask;
+                    methods = await methodsTask;
+
+                    SelectedCategories = recipe.Categories.Select(c => c.Id).ToHashSet() ?? new HashSet<string>();
+                    SelectedCuisines = recipe.Cuisines.Select(c => c.Id).ToHashSet() ?? new HashSet<string>();
+                    SelectedDiets = recipe.Diets.Select(d => d.Id).ToHashSet() ?? new HashSet<string>();
+                    SelectedMethods = recipe.Methods.Select(m => m.Id).ToHashSet() ?? new HashSet<string>();
+
+                    if (categories is null || cuisines is null || diets is null || methods is null)
+                        errorMessage = "Error loading recipe.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = "An error occurred while loading the recipe.";
+                Logger.LogError(ex, errorMessage);
+            }
+            finally
+            {
+                isLoading = false;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleImageUploaded(string imageUrl)
+    {
+        recipe.PictureUrl = imageUrl;
+        return Task.CompletedTask;
+    }
+    
+    private void UpdateSelectedCategories(Category category, ChangeEventArgs e)
+    {
+        bool isSelected = e.Value is not null && (bool)e.Value;
+        if (isSelected)
+        {
+            recipe.Categories ??= [];
+            if (!recipe.Categories.Any(c => c.Id == category.Id))
+            {
+                recipe.Categories.Add(category);
+            }
+        }
+        else
+        {
+            var existingCategory = recipe.Categories.FirstOrDefault(c => c.Id == category.Id);
+            if (existingCategory is not null)
+            {
+                recipe.Categories.Remove(existingCategory);
+            }
+        }
+    }
+
+    private void UpdateSelectedCuisines(Cuisine cuisine, ChangeEventArgs e)
+    {
+        bool isSelected = e.Value is not null && (bool)e.Value;
+        if (isSelected)
+        {
+            recipe.Cuisines ??= [];
+            if (!recipe.Cuisines.Any(c => c.Id == cuisine.Id))
+            {
+                recipe.Cuisines.Add(cuisine);
+            }
+        }
+        else
+        {
+            var existingCuisine = recipe.Cuisines.FirstOrDefault(c => c.Id == cuisine.Id);
+            if (existingCuisine is not null)
+            {
+                recipe.Cuisines.Remove(existingCuisine);
+            }
+        }
+    }
+
+    private void UpdateSelectedDiets(Diet diet, ChangeEventArgs e)
+    {
+        bool isSelected = e.Value is not null && (bool)e.Value;
+        if (isSelected)
+        {
+            recipe.Diets ??= [];
+            if (!recipe.Diets.Any(c => c.Id == diet.Id))
+            {
+                recipe.Diets.Add(diet);
+            }
+        }
+        else
+        {
+            var existingDiet = recipe.Diets.FirstOrDefault(c => c.Id == diet.Id);
+            if (existingDiet is not null)
+            {
+                recipe.Diets.Remove(existingDiet);
+            }
+        }
+    }
+
+    private void UpdateSelectedMethods(Method method, ChangeEventArgs e)
+    {
+        bool isSelected = e.Value is not null && (bool)e.Value;
+        if (isSelected)
+        {
+            recipe.Methods ??= [];
+            if (!recipe.Methods.Any(c => c.Id == method.Id))
+            {
+                recipe.Methods.Add(method);
+            }
+        }
+        else
+        {
+            var existingMethod = recipe.Methods.FirstOrDefault(c => c.Id == method.Id);
+            if (existingMethod is not null)
+            {
+                recipe.Methods.Remove(existingMethod);
+            }
+        }
+    }
+
+    private void AddIngredient()
+    {
+        if (!string.IsNullOrWhiteSpace(ingredientAmount) && !string.IsNullOrWhiteSpace(ingredientName))
+        {
+            recipe.Ingredients ??= [];
+            recipe?.Ingredients.Add(new Ingredient
+                {
+                    Amount = ingredientAmount,
+                    Name = ingredientName,
+                    UnitType = ingredientUnitType.HasValue ? ingredientUnitType.Value : (UnitType?)null
+                });
+
+            ingredientAmount = string.Empty;
+            ingredientName = string.Empty;
+            ingredientUnitType = null;
+        }
+    }
+
+    private void RemoveIngredient(Ingredient ingredient)
+    {
+        recipe?.Ingredients.Remove(ingredient);
+    }
+
+    private void AddStep()
+    {
+        if (!string.IsNullOrWhiteSpace(stepInput))
+        {
+            recipe.Steps ??= [];
+            recipe.Steps.Add(stepInput);
+            stepInput = string.Empty;
+        }
+    }
+
+    private void RemoveStep(string step)
+    {
+        recipe.Steps.Remove(step);
+    }
+
+
+    private async Task HandleValidSubmit()
+    {
+        Logger.LogInformation($"Updating recipe {recipe.Name}");
+
+        try
+        {
+            await RecipeApiService.UpdateRecipeAsync(Id, recipe);
+            NavigationManager.NavigateTo("/admin/recipes");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while updating the recipe with Id {Id}. Please try again later.";
+            Logger.LogError(ex, $"\n{errorMessage}");
+        }
+    }
+}

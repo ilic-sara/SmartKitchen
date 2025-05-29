@@ -1,0 +1,32 @@
+﻿
+@if(Diets is not null && Diets.Count > 0)
+{
+    <div class="row justify-content-center my-3">
+        @if (DarkText)
+        {
+            <h3 class="text-center gray-background text-light p-2">Diets</h3>
+        }
+        else
+        {
+            <h3 class="text-center p-2">Diets</h3>
+        }
+        <div class="d-flex flex-row flex-wrap justify-content-evenly">
+            @foreach (var diet in Diets)
+            {
+                <Card Text="@diet.Name"
+                      NavigateTo="@($"/show-recipes/diet/{diet.Id}/{diet.Name}/1")"
+                      PictureUrl="@diet.PictureUrl">
+                </Card>
+            }
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public List<Diet> Diets { get; set; } = [];
+
+    [Parameter]
+    public bool DarkText { get; set; } = false;
+}

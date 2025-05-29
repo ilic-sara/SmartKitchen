@@ -1,0 +1,39 @@
+﻿
+@if(Recipes is not null && Recipes.Count > 0)
+{
+    <div class="row justify-content-center my-3">
+        @if (!string.IsNullOrWhiteSpace(Text))
+        {
+            @if (DarkText)
+            {
+                <h3 class="text-center gray-background text-light p-2">@Text</h3>
+            }
+            else
+            {
+                <h3 class="text-center p-2">@Text</h3>
+            }
+        }
+        <div class="d-flex flex-row flex-wrap justify-content-evenly">
+            @foreach (var recipe in Recipes)
+            {
+                <Card Text="@recipe.Name"
+                      NavigateTo="@($"/recipe/{recipe.Id}")"
+                      PictureUrl="@recipe.PictureUrl">
+                </Card>
+            }
+        </div>
+    </div>
+}
+
+
+@code {
+
+    [Parameter]
+    public List<Recipe> Recipes { get; set; } = [];
+
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool DarkText { get; set; } = false;
+}

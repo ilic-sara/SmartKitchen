@@ -1,0 +1,66 @@
+﻿@page "/admin/log-in"
+@inject UserApiService UserApiService
+@inject NavigationManager NavigationManager
+@inject ILogger<LogIn> Logger
+@rendermode InteractiveWebAssembly
+
+<div class="container-fluid my-5">
+    <div class="row justify-content-center">
+        <div class="col-11 col-md-8">
+            <div class="card p-4">
+                <EditForm Model="logInModel" OnValidSubmit="HandleLogIn" FormName="Login" class="form-control">
+                    <h3 class="text-center my-4">Log in</h3>
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" @bind-Value="logInModel.Username" id="username"/>
+                        <label for="username">Username</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" @bind-Value="logInModel.Password" type="password" id="password"/>
+                        <label for="password">Password</label>
+                    </div>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="input-group mb-3 justify-content-center">
+                        <button class="btn green-btn" type="submit">Sign Up</button>
+                    </div>
+                    @if (errorMessage is not null)
+                    {
+                        <div class="alert alert-danger">
+                            @errorMessage
+                        </div>
+                    }
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserLoginModel logInModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogIn()
+    {
+        bool success = false;
+        try
+        {
+            success = await UserApiService.AuthenticateAsync(logInModel);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Invalid username or password.";
+            Logger.LogError(ex, $"\n{errorMessage}");
+        }
+
+        if (!success)
+        {
+            errorMessage = "Login failed.";
+            Logger.LogError(errorMessage);
+            return;
+        }
+        
+        Logger.LogWarning($"Login successful for user {logInModel.Username}.");
+
+        NavigationManager.NavigateTo("/admin");
+    }
+}

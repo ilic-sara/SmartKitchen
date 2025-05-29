@@ -1,0 +1,111 @@
+﻿@page "/admin/edit-diet/{Id}"
+@inject DietApiService DietApiService
+@inject NavigationManager NavigationManager
+@inject ILogger<EditDiet> Logger
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <h3>@errorMessage</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-8">
+                <div class="card p-4">
+                    <EditForm Model="diet" OnValidSubmit="HandleValidSubmit" FormName="editDietForm" class="form-control">
+                        <h3 class="text-center my-4">Edit diet @diet.Name</h3>
+                        <div class="form-floating mb-3">
+                            <InputText class="form-control" type="text" @bind-Value="diet.Name" placeholder="Name" id="name" />
+                            <label for="name">Name: </label>
+                        </div>
+                        <ImageUpload OnImageUploaded="HandleImageUploaded" />
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="input-group mb-3 justify-content-center">
+                            <button class="btn green-btn" type="submit">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Diet diet { get; set; } = new();
+    private bool isLoading = true;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                errorMessage = "Error loading diet. Id is null.";
+                isLoading = false;
+                Logger.LogError(errorMessage);
+                return;
+            }
+
+            try
+            {
+                diet = await DietApiService.GetDietByIdAsync(Id);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = "An error occurred while loading the diet.";
+                Logger.LogError(ex, errorMessage);
+            }
+            finally
+            {
+                isLoading = false;
+            }
+
+            if (diet is null)
+            {
+                errorMessage = $"Diet with Id {Id} was not found.";
+                Logger.LogError(errorMessage);
+            }
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleImageUploaded(string imageUrl)
+    {
+        diet.PictureUrl = imageUrl;
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+
+        Logger.LogInformation($"Updating diet {diet.Name}");
+
+        try
+        {
+            await DietApiService.UpdateDietAsync(Id, diet);
+            NavigationManager.NavigateTo("/admin/diets");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while updating the diet with Id {Id}. Please try again later.";
+            Logger.LogError(ex, $"\n{errorMessage}");
+        }
+    }
+}

@@ -1,0 +1,121 @@
+﻿@page "/"
+@inject IRecipeService RecipeService
+@inject ICategoryService CategoryService
+@inject ICuisineService CuisineService
+@inject IDietService DietService
+@inject IMethodService MethodService
+@inject ILogger<StartPage> Logger
+@rendermode InteractiveServer
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading the start page. Please try again later.</h3>
+}
+else
+{
+    <div class="image-container">
+        <img src="hero1.png" class="hero-image">
+        <div class="overlay">
+            <span class="main-text">Smart kitchen</span>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-11 col-md-10 col-xxl-9 welcome-div">
+            <h1 class="text-center my-3"> Welcome to Smart kitchen </h1>
+            <p>
+                Discover delicious meals the smart way! 
+                Smart Kitchen helps you explore recipes by category, cuisine, diet, or cooking method 
+                — or search based on ingredients you already have. Can’t find what you’re craving? 
+                Let our AI-powered assistant whip up a custom recipe just for you.
+            </p>
+            <h3 class="text-center my-3 mt-5">Why Smart kitchen?</h3>
+            <div class="row justify-content-center">
+                @{
+                    string text1 = "Type in the ingredients you have or want to use, and we'll find "
+                    + "recipes that match — no grocery run needed!";
+
+                    <TextCard Heading="Smart Search" Text="@text1" Link="/search-by-ingredients" />
+                }
+                @{
+                    string text2 = "Browse recipes by cuisine, diet, category, cooking method or name - " +
+                    "we have something for everybody.";
+
+                    <TextCard Heading="Tailored to You" Text="@text2" Link="/search-recipes" />
+                }
+                @{
+                    string text3 = "Didn’t find what you need? Ask our built-in AI to generate a recipe " +
+                    "based on your exact request.";
+
+                    <TextCard Heading="Recipe Generator" Text="@text3" Link="/generate-recipe" />
+                }
+                @{
+                    string text4 = "Looking for inspiration for your next meal or a snack? " 
+                    + "Our recipes are easy to follow and full of flavor. ";
+
+                    <TextCard Heading="Simple & Delicious" Text="@text4" Link="/all-recipes" />
+                }
+                
+            </div>
+        </div>
+        <div class="col-11 col-md-10 col-xxl-9 px-0">
+            <RecipeList Recipes="newestRecipes" Text="Newest recipes" DarkText="true"/>
+
+            <CategoryList Categories="@categories" DarkText="true" />
+
+            <CuisineList Cuisines="@cuisines" DarkText="true" />
+
+            <DietList Diets="@diets" DarkText="true" />
+
+            <MethodList Methods="@methods" DarkText="true" />
+        </div>
+    </div>
+}
+@code {
+
+    private List<Category> categories = [];
+    private List<Cuisine> cuisines = [];
+    private List<Diet> diets = [];
+    private List<Method> methods = [];
+    private List<Recipe> newestRecipes = [];
+    private bool isLoading = true;
+    private bool loadError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var categoriesTask = CategoryService.GetAllAsync();
+            var cuisinesTask = CuisineService.GetAllAsync();
+            var dietsTask = DietService.GetAllAsync();
+            var methodsTask = MethodService.GetAllAsync();
+            var recipesTask = RecipeService.GetNewestRecipes(0, 12);
+
+            await Task.WhenAll(categoriesTask, cuisinesTask, dietsTask, methodsTask, recipesTask);
+
+            categories = await categoriesTask;
+            cuisines = await cuisinesTask;
+            diets = await dietsTask;
+            methods = await methodsTask;
+            newestRecipes = await recipesTask;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while loading initial data.");
+            loadError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    
+    }
+}

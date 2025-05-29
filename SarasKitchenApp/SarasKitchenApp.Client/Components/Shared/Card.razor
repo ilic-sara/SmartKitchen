@@ -1,0 +1,54 @@
+﻿@inject NavigationManager NavigationManager
+@inject ILogger<Card> Logger
+
+@if (!string.IsNullOrWhiteSpace(PictureUrl) && !string.IsNullOrWhiteSpace(Text) && !string.IsNullOrWhiteSpace(NavigateTo))
+{
+    <div role="button" @onclick="NavigateToPage" class="card-component">
+        <img src="@PictureUrl" class="card-image" />
+        <p class="card-text">@Text</p>
+    </div>
+}
+
+<style>
+    .card-component {
+        padding: 16px;
+        margin: 15px 0 15px 0;
+        text-align: center;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease;
+    }
+
+        .card-component:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+    .card-image {
+        width: 220px;
+        height: 220px;
+        object-fit: cover;
+        overflow: hidden;
+        border-radius: 0.5rem;
+    }
+
+    .card-text {
+        font-size: 1.2rem;
+        color: #333;
+    }
+</style>
+
+
+@code {
+    [Parameter]
+    public string PictureUrl { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string NavigateTo { get; set; } = string.Empty;
+
+    private void NavigateToPage()
+    {
+        NavigationManager.NavigateTo(NavigateTo);
+    }
+}

@@ -1,0 +1,43 @@
+﻿@page "/admin/log-out"
+@inject UserApiService UserApiService
+@inject NavigationManager NavigationManager
+@inject ILogger<LogoutPage> Logger
+@rendermode InteractiveWebAssembly
+
+<div class="container-fluid my-5">
+    <div class="row justify-content-center">
+        <div class="col-11 col-md-8">
+            <div class="p-4 text-center">
+
+                <h3>Are you sure you want to log out?</h3>
+                <div class="input-group my-3 justify-content-center">
+                    <button type="button" @onclick="Logout" class="btn green-btn px-4">Log out</button>
+                </div>
+                <NavLink class="nav-link text-secondary" href="/">Back to the home page</NavLink>
+                @if (!string.IsNullOrWhiteSpace(message))
+                {
+                    <p class="text-danger">@message</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    private string message = string.Empty;
+
+    private async Task Logout(){
+        try
+        {
+            if (await UserApiService.LogoutAsync())
+                NavigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while trying to logout user.");
+            message = "Logout failed. Please try again.";
+        }
+    }
+}

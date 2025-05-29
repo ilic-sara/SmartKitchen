@@ -1,0 +1,89 @@
+﻿@page "/search-recipes"
+@inject RecipeApiService RecipeApiService
+@inject ILogger<SearchRecipes> Logger
+@rendermode InteractiveWebAssembly
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading recipes. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9 text-center">
+                <h1 class="mb-5">Search for recipes</h1>
+                <Search OnTextChanged="ShowSearchedRecipes"></Search>
+                @if (!string.IsNullOrWhiteSpace(searchText))
+                {
+                    @if (recipes is not null && recipes.Count > 0)
+                    {
+                        <RecipeList Recipes="@recipes" />
+                        <Pagination TotalItems="@totalNumberOfRecipes" CurrentPage="@pageNumber" OnPageChanged="HandlePageChanged" />
+                    }
+                    else
+                    {
+                        <p class="my-3">There are no recipes to display.</p>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    private List<Recipe> recipes = [];
+    private bool isLoading = false;
+    private bool loadError = false;
+    private long totalNumberOfRecipes = 0;
+    private int pageNumber { get; set; } = 1;
+    private string searchText = string.Empty;
+
+    private async Task ShowSearchedRecipes(string text)
+    {
+        pageNumber = 1;
+        searchText = text;
+
+        try
+        {
+            totalNumberOfRecipes = await RecipeApiService.GetNumberOfRecipesByName(searchText);
+            await UpdateDisplayedRecipes();
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError($"ERROR: {ex}");
+        }
+        
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        pageNumber = page;
+        await UpdateDisplayedRecipes();
+    }
+
+    private async Task UpdateDisplayedRecipes()
+    {
+        isLoading = true;
+
+        try
+        {
+            recipes = await RecipeApiService.GetRecipesByName(searchText, pageNumber - 1);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"ERROR: {ex}");
+        }
+
+        isLoading = false;
+    }
+}

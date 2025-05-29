@@ -1,0 +1,18 @@
+﻿@inject FileUploadApiService FileUploadApiService
+@rendermode InteractiveServer
+
+<InputFile OnChange="@HandleImageUpload" class="form-control mb-2" />
+
+@code {
+
+    [Parameter]
+    public EventCallback<string> OnImageUploaded { get; set; }
+
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        var imageUrl = await FileUploadApiService.UploadImageAsync(e.File);
+
+        await OnImageUploaded.InvokeAsync(imageUrl);
+    }
+}

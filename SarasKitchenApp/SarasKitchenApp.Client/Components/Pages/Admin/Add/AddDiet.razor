@@ -1,0 +1,65 @@
+﻿@page "/admin/add-diet"
+@inject DietApiService DietApiService
+@inject NavigationManager NavigationManager
+@inject FileUploadApiService FileUploadApiService
+@inject ILogger<AddDiet> Logger
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="container-fluid my-5">
+    <div class="row justify-content-center my-5">
+        <div class="col-11 col-md-8">
+            <div class="card p-4">
+                <EditForm Model="newDiet" OnValidSubmit="HandleValidSubmit" FormName="addDietForm" class="form-control">
+                    <h3 class="text-center my-4">Add new diet</h3>
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" type="text" @bind-Value="newDiet.Name" placeholder="Name" id="name" />
+                        <label for="name">Name: </label>
+                        <br />
+                    </div>
+                    <ImageUpload OnImageUploaded="HandleImageUploaded" />
+
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="input-group mb-3 justify-content-center">
+                        <button class="btn green-btn" type="submit">Save</button>
+                    </div>
+                    @if (errorMessage is not null)
+                    {
+                        <div class="alert alert-danger">
+                            @errorMessage
+                        </div>
+                    }
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private Diet newDiet = new();
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        Logger.LogInformation($"Valid Submit - Name: {newDiet.Name}, Picture Url: {newDiet.PictureUrl}");
+
+        try
+        {
+            await DietApiService.CreateDietAsync(newDiet);
+            NavigationManager.NavigateTo("/admin/diets");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while saving the diet. Please try again later.";
+            Logger.LogError(ex, $"\n{errorMessage}");
+        }
+    }
+
+    private Task HandleImageUploaded(string imageUrl)
+    {
+        newDiet.PictureUrl = imageUrl;
+        return Task.CompletedTask;
+    }
+}

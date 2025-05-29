@@ -1,0 +1,159 @@
+﻿@page "/search-by-ingredients"
+@inject RecipeApiService RecipeApiService
+@inject ILogger<SearchByIngredientsPage> Logger
+@rendermode InteractiveWebAssembly
+
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading recipes. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9 text-center">
+                <EditForm Model="ingredients" OnValidSubmit="HandleValidSubmit" FormName="searchByIngredients">
+                    <h1 class="text-center mb-5">Search by ingredients you want to use</h1>
+                    <div class="form-group ps-3 text-center">
+                        <div class="row w-100">
+                            <div class="col-12 col-sm-9 col-lg-11">
+                                <InputText placeholder="Enter one ingredient name" @bind-Value="ingredientName" class="form-control m-1" />
+                            </div>
+                            <div class="col-12 col-sm-3 col-lg-1">
+                                <button type="button" @onclick="AddIngredient" class="btn green-btn-secondary w-auto m-1">Add</button>
+                            </div>
+
+                        </div>
+                        <div class="flex flex-row justify-content-start">
+                            @foreach (var ingredient in ingredients)
+                            {
+
+                                <div class="btn-group border rounded mx-3">
+                                    <button type="button" class="btn m-1 p-1 pe-3" @onclick="() => RemoveIngredient(ingredient)">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+
+                                    <button type="button" class="btn m-1 p-1">@ingredient</button>
+                                </div>
+                            }
+                        </div>
+                        <button type="submit" class="btn green-btn w-auto my-3 ">Search</button>
+
+                    </div>
+                </EditForm>
+
+                @if (searched && recipes is not null && recipes.Count > 0)
+                {
+                    <RecipeList Recipes="@recipes" />
+                    <Pagination TotalItems="@totalNumberOfRecipes" CurrentPage="@pageNumber" OnPageChanged="HandlePageChanged" />
+                }
+                @if (showNoResultsMessage)
+                {
+                    <p class="my-3">There are no recipes to display.</p>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string ingredientName = string.Empty;
+    private List<string> ingredients = [];
+    private List<Recipe> recipes = [];
+    private long totalNumberOfRecipes = 0;
+    private int pageNumber { get; set; } = 1;
+    private bool searched = false;
+    private bool isLoading = false;
+    private bool loadError = false;
+    private bool showNoResultsMessage = false;
+
+    private void AddIngredient()
+    {
+        if (!string.IsNullOrWhiteSpace(ingredientName))
+        {
+            ingredients.Add(ingredientName);
+            ingredientName = string.Empty;
+            showNoResultsMessage = false;
+        }
+    }
+
+    private void RemoveIngredient(string ingredient)
+    {
+        ingredients.Remove(ingredient);
+        showNoResultsMessage = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (ingredients.Count == 0)
+            return;
+
+        pageNumber = 1;
+        searched = true;
+        string ingredientsText = string.Join(",", ingredients);
+        isLoading = true;
+
+        try
+        {
+            totalNumberOfRecipes = await RecipeApiService.GetNumberOfRecipesByIngredients(ingredientsText);
+            if(totalNumberOfRecipes > 0)
+            {
+                await UpdateDisplayedRecipes();
+            }
+            else
+                showNoResultsMessage = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"ERROR: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        pageNumber = page;
+        isLoading = true;
+
+        try
+        {
+            await UpdateDisplayedRecipes();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"ERROR: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UpdateDisplayedRecipes()
+    {
+        showNoResultsMessage = false;
+        string ingredientsText = string.Join(",", ingredients);
+
+        try
+        {
+            recipes = await RecipeApiService.GetRecipesByIngredients(ingredientsText, pageNumber - 1);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"ERROR: {ex}");
+        }
+    }
+}

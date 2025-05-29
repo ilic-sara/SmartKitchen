@@ -1,0 +1,76 @@
+﻿@page "/all-recipes"
+@inject IRecipeService RecipeService
+@inject ILogger<AllRecipesPage> Logger
+@rendermode InteractiveServer
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading recipes. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9 text-center">
+                @if (recipes is not null && recipes.Count > 0)
+                {
+                    <RecipeList Recipes="@recipes" Text="@Text" />
+                    <Pagination TotalItems="@totalNumberOfRecipes" CurrentPage="@Page" OnPageChanged="HandlePageChanged" />
+                }
+                else
+                {
+                    <p>There are no recipes to display.</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Recipe> recipes = [];
+    private long totalNumberOfRecipes = 0;
+    private bool isLoading = true;
+    private bool loadError = false;
+
+    public int Page { get; set; } = 1;
+
+	private string Text = "All Recipes";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadRecipes();
+    }
+
+    private async Task LoadRecipes()
+    {
+        try
+        {
+            isLoading = true;
+            recipes = await RecipeService.GetAllRecipesFromLatest(Page - 1, PaginationSettings.NumberOfRecipesPerPage);
+            totalNumberOfRecipes = await RecipeService.GetTotalNumberOfRecipes();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while loading recipes.");
+            loadError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        Page = page;
+        await LoadRecipes();
+    }
+}

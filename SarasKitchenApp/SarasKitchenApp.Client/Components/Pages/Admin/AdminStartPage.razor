@@ -1,0 +1,49 @@
+﻿@page "/admin"
+@inject NavigationManager NavigationManager
+@inject ILogger<AdminStartPage> Logger
+@rendermode InteractiveWebAssembly
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="container-fluid my-5">
+    <div class="row justify-content-center">
+        <div class="col-11 col-md-10 col-xxl-9">
+            <h1 class="text-center my-3">Admin page</h1>
+            <hr />
+            <div class="row justify-content-center">
+                <div class="col-11 col-md-6 col-lg-4 col-xl-3 mt-5">
+                    <h3 class="text-center">View lists</h3>
+                    <div class="d-flex flex-column justify-content-center">
+                        @foreach (var route in ListRoutes)
+                        {
+                            <button type="button" @onclick="() => NavigateToPage(route)" class="btn green-btn m-1 px-2 w-auto">View @route</button>
+                        }
+                    </div>
+                </div>
+                <div class="col-11 col-md-6 col-lg-4 col-xl-3 mt-5">
+                    <h3 class="text-center ">Add new item</h3>
+                    <div class="d-flex flex-column justify-content-center">
+                        @foreach (var route in AddItemRoutes)
+                        {
+                            string location = "add-" + route;
+                            <button type="button" @onclick="() => NavigateToPage(location)" class="btn green-btn m-1 px-2 w-auto">Add @route</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    List<string> ListRoutes = [ "categories", "cuisines", "diets", "methods", "recipes" ];
+    List<string> AddItemRoutes = [ "category", "cuisine", "diet", "method", "recipe" ];
+
+
+    private void NavigateToPage(string location) 
+    {
+        NavigationManager.NavigateTo($"/admin/{location}");
+    }
+
+}

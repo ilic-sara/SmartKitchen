@@ -1,0 +1,25 @@
+﻿
+<div class="d-flex flex-row justify-content-center">
+    <div class="input-group">
+        <InputText placeholder="Search" @bind-Value="searchText" class="form-control"/>
+        <span class="input-group-text" id="basic-addon1" @onclick="SearchRecipes">
+            <i class="fas fa-search"></i>
+        </span>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback<string> OnTextChanged { get; set; }
+
+    private string searchText = string.Empty;
+
+    private async Task SearchRecipes()
+    {
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            await OnTextChanged.InvokeAsync(searchText);
+        }
+    }
+}

@@ -1,0 +1,109 @@
+﻿@page "/admin/edit-category/{Id}"
+@inject CategoryApiService CategoryApiService
+@inject NavigationManager NavigationManager
+@inject ILogger<EditCategory> Logger
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <h3>@errorMessage</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-8">
+                <div class="card p-4">
+                    <EditForm Model="category" OnValidSubmit="HandleValidSubmit" FormName="editCategoryForm" class="form-control">
+                        <h3 class="text-center my-4">Edit category @category.Name</h3>
+                        <div class="form-floating mb-3">
+                            <InputText class="form-control" type="text" @bind-Value="category.Name" placeholder="Name" id="name" />
+                            <label for="name">Name: </label>
+                        </div>
+                        <ImageUpload OnImageUploaded="HandleImageUploaded" />
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="input-group mb-3 justify-content-center">
+                            <button class="btn green-btn" type="submit">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Category category { get; set; } = new();
+    private bool isLoading = true;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                errorMessage = "Error loading category. Id is null.";
+                isLoading = false;
+                Logger.LogError(errorMessage);
+                return;
+            }
+
+            try
+            {
+                category = await CategoryApiService.GetCategoryByIdAsync(Id);
+
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"An error occurred while loading the category with Id {Id}.";
+                Logger.LogError(ex, $"\n{errorMessage}");
+            }
+            finally
+            {
+                isLoading = false;
+            }
+
+            if (category is null)
+            {
+                errorMessage = $"Category with Id {Id} was not found.";
+                Logger.LogError(errorMessage);
+            }
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleImageUploaded(string imageUrl)
+    {
+        category.PictureUrl = imageUrl;
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        Logger.LogInformation($"Updating category {category.Name}");
+
+        try
+        {
+            await CategoryApiService.UpdateCategoryAsync(Id, category);
+            NavigationManager.NavigateTo("/admin/categories");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while updating the category with Id {Id}. Please try again later.";
+            Logger.LogError(ex, $"\n{errorMessage}");
+        }
+    }
+}

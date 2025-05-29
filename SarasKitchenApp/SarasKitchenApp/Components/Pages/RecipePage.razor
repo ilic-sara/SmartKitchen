@@ -1,0 +1,139 @@
+﻿@page "/recipe/{Id}"
+@inject NavigationManager NavigationManager
+@inject IRecipeService RecipeService
+@inject ILogger<RecipePage> Logger
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error loading recipe. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="recipe-page col-11 col-md-10 col-xxl-9 p-2">
+                <h1 class="text-center p-2">@recipe.Name</h1>
+                <div class="row border-top border-bottom py-2">
+                    <div class="col text-center">
+                        <span>Servings: @recipe.Servings</span>
+                    </div>
+                    <div class="col text-center">
+                        <span>Time: @recipe.PrepTime</span>
+                    </div>
+                </div>
+                <div class="mx-5 d-flex flex-row justify-content-center">
+                    @if (recipe.Categories is not null && recipe.Categories.Count > 0)
+                    {
+                        foreach (var category in recipe.Categories)
+                        {
+                            string navigationPath = $"/show-recipes/{nameof(Category).ToLower()}/{category.Id}/{category.Name}/1";
+                            <RecipeButtonTag Text="@category.Name" Path= "@navigationPath" />
+                        }
+                    }
+                    @if (recipe.Cuisines is not null && recipe.Cuisines.Count > 0)
+                    {
+                        foreach (var cuisine in recipe.Cuisines)
+                        {
+                            string navigationPath = $"/show-recipes/{nameof(Cuisine).ToLower()}/{cuisine.Id}/{cuisine.Name}/1";
+                            <RecipeButtonTag Text="@cuisine.Name" Path= "@navigationPath" />
+                        }
+                    }
+                    @if (recipe.Diets is not null && recipe.Diets.Count > 0)
+                    {
+                        foreach (var diet in recipe.Diets)
+                        {
+                            string navigationPath = $"/show-recipes/{nameof(Diet).ToLower()}/{diet.Id}/{diet.Name}/1";
+                            <RecipeButtonTag Text="@diet.Name" Path= "@navigationPath" />
+                        }
+                    }
+                    @if (recipe.Methods is not null && recipe.Methods.Count > 0)
+                    {
+                        foreach (var method in recipe.Methods)
+                        {
+                            string navigationPath = $"/show-recipes/{nameof(Method).ToLower()}/{method.Id}/{method.Name}/1";
+                            <RecipeButtonTag Text="@method.Name" Path= "@navigationPath" />
+                        }
+                    }
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-11 col-md-10 col-xxl-9">
+                        <img src="@recipe.PictureUrl" class="recipe-img-large" />
+                    </div>
+                    <div class="col-11 col-md-10 col-xxl-9">
+                        <div>
+                            <span><strong><em>Ingredients:</em></strong></span>
+                            <ul>
+                                @foreach (var ingredient in recipe.Ingredients)
+                                {
+                                    <li>@ingredient.Amount @ingredient.UnitType <strong>@ingredient.Name</strong></li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="recipe-steps">
+                            <span><strong><em>Steps:</em></strong></span>
+                            <ol>
+                                @foreach (var step in recipe.Steps)
+                                {
+                                    <li><p class="text-justify">@step</p></li>
+                                }
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Recipe recipe = new();
+    private bool isLoading = true;
+    private bool loadError = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var retrievedRecipe = await RecipeService.GetOneByIdAsync(Id);
+            if (retrievedRecipe is null)
+            {
+                errorMessage = $"Recipe with Id {Id} was not found.";
+                Logger.LogError(errorMessage);
+                loadError = true;
+            }
+            else
+            {
+                recipe = retrievedRecipe;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while loading the recipe with Id {Id}.";
+            Logger.LogError(ex, errorMessage);
+            loadError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void NavigateToPage(string Path, string id, string text)
+    {
+        NavigationManager.NavigateTo($"/show-recipes/{Path}/{id}/{text}/1");
+
+    }
+
+}

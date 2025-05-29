@@ -1,0 +1,33 @@
+﻿
+@if(Methods is not null && Methods.Count > 0)
+{
+    <div class="row justify-content-center my-3">
+        @if (DarkText)
+        {
+            <h3 class="text-center gray-background text-light p-2">Methods</h3>
+        }
+        else
+        {
+            <h3 class="text-center p-2">Methods</h3>
+        }
+        <div class="d-flex flex-row flex-wrap justify-content-evenly">
+            @foreach (var method in Methods)
+            {
+                <Card Text="@method.Name"
+                      NavigateTo="@($"/show-recipes/method/{method.Id}/{method.Name}/1")"
+                      PictureUrl="@method.PictureUrl">
+                </Card>
+
+            }
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public List<Method> Methods { get; set; } = [];
+
+    [Parameter]
+    public bool DarkText { get; set; } = false;
+}

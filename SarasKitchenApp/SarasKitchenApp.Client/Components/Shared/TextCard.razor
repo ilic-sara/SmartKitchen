@@ -1,0 +1,25 @@
+﻿<div class="col-11 col-sm-6 col-xl-3 my-3">
+    <div class="p-3 start-page-cards">
+        <p class="start-page-card-header">@Heading</p>
+        <p class="fst-italic fs-6">
+            @Text
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(Link))
+        {
+            <NavLink class="try-it-link" href="@Link">Try it out →</NavLink>
+
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Heading { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+	public string Link { get; set; } = string.Empty;
+}

@@ -1,0 +1,82 @@
+﻿@page "/generate-recipe"
+@inject RecipeGeneratorService RecipeGeneratorService
+@inject ILogger<GenerateRecipePage> Logger
+@rendermode InteractiveServer
+
+@if (isGenerating)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Generating...</span>
+        </div>
+    </div>
+}
+else if (loadError)
+{
+    <h3>Error generating recipe. Please try again later.</h3>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9 text-center">
+                <h1 class="text-center mb-5">Recipe Generator</h1>
+                <InputTextArea placeholder="Describe your ingredients (e.g., eggs, oats) or a recipe you would like"
+                               @bind-Value="prompt" class="form-control m-1" rows="4" />
+                <button class="btn green-btn w-auto my-3" @onclick="GenerateRecipe" disabled="@isGenerating">
+                    Generate
+                </button>
+
+                @if (recipe != null)
+                {
+                    <div class="text-start border rounded p-3 bg-light mt-3">
+                        <h4>@recipe.Title</h4>
+                        <strong>Ingredients:</strong>
+                        <ul>
+                            @foreach (var item in recipe.Ingredients)
+                            {
+                                <li>@item</li>
+                            }
+                        </ul>
+                        <strong>Instructions:</strong>
+                        <ol>
+                            @foreach (var step in recipe.Instructions)
+                            {
+                                <li>@step</li>
+                            }
+                        </ol>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string prompt = string.Empty;
+    private RecipeGeneratorService.RecipeFromAI? recipe;
+    private bool isGenerating = false;
+    private bool loadError = false;
+
+    private async Task GenerateRecipe()
+    {
+        if (string.IsNullOrWhiteSpace(prompt)) return;
+
+        isGenerating = true;
+        loadError = false;
+
+        try
+        {
+            recipe = await RecipeGeneratorService.GetRecipeJsonAsync(prompt);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while generating a recipe.");
+            loadError = true;
+        }
+
+        if(recipe is null)
+			loadError = true;
+        isGenerating = false;
+    }
+}

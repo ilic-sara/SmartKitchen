@@ -1,0 +1,26 @@
+services:
+
+  webapis:
+    build:
+      context: .
+      dockerfile: WebAPIs/Dockerfile
+    container_name: webapis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+    ports:
+      - "5069:5069"
+
+  blazorserver:
+    build:
+      context: .
+      dockerfile: SarasKitchenApp/SarasKitchenApp/Dockerfile
+    container_name: blazorserver
+    depends_on:
+      - webapis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+    ports:
+      - "7227:7227"
+
+volumes:
+  mongodb_data:

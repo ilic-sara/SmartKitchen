@@ -1,0 +1,92 @@
+﻿@if(TotalItems != 0 && TotalItems > PaginationSettings.NumberOfRecipesPerPage)
+{
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+            <button class="page-link" @onclick="() => SetPage(CurrentPage - 1)">Previous</button>
+        </li>
+        
+            @if(TotalPages <= 5)
+            {
+                for (int i = 1; i <= TotalPages; i++)
+                {
+                    int x = i;
+                    <li class="page-item @(CurrentPage == x ? "active" : "")">
+                    <button class="page-link" @onclick="() => SetPage(x)">@x</button>
+                    </li>
+                }  
+            }
+            else if(CurrentPage >= TotalPages - 2)
+            {
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => SetPage(1)">1</button>
+                </li>
+                <span>...</span>
+                for (int i = TotalPages - 3; i <= TotalPages; i++)
+                {
+                    int x = i;
+                    <li class="page-item @(CurrentPage == x ? "active" : "")">
+                        <button class="page-link" @onclick="() => SetPage(x)">@x</button>
+                    </li>
+                }
+            }
+            else if (CurrentPage <= 3)
+            {
+                for (int i = 1; i <= 4; i++)
+                {
+                    int x = i;
+                    <li class="page-item @(CurrentPage == x ? "active" : "")">
+                        <button class="page-link" @onclick="() => SetPage(x)">@x</button>
+                    </li>
+                }
+                <span>...</span>
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => SetPage(TotalPages)">@TotalPages</button>
+                </li>
+            }
+            else
+            {
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => SetPage(1)">1</button>
+                </li>
+                <span>...</span>
+                for(int i = CurrentPage - 1; i <= CurrentPage + 1; i++)
+                {
+                    int x = i;
+                    <li class="page-item @(CurrentPage == x ? "active" : "")">
+                        <button class="page-link" @onclick="() => SetPage(x)">@x</button>
+                    </li>
+                }
+                <span>...</span>
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => SetPage(TotalPages)">@TotalPages</button>
+                </li>
+            }
+        <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+            <button class="page-link" @onclick="() => SetPage(CurrentPage + 1)">Next</button>
+        </li>
+    </ul>
+</nav>
+}
+
+@code {
+    [Parameter]
+    public long TotalItems { get; set; }
+
+    [Parameter]
+    public int CurrentPage { get; set; } = 1;
+
+    [Parameter]
+    public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => (int)Math.Ceiling((double)TotalItems / PaginationSettings.NumberOfRecipesPerPage);
+
+    private async Task SetPage(int pageNumber)
+    {
+        if (pageNumber != CurrentPage)
+        {
+            CurrentPage = pageNumber;
+            await OnPageChanged.InvokeAsync(pageNumber);
+        }
+    }
+}

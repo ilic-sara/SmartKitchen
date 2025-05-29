@@ -1,0 +1,84 @@
+﻿@page "/admin/methods"
+@inject NavigationManager NavigationManager
+@inject MethodApiService MethodApiService
+@rendermode InteractiveWebAssembly
+@attribute [Authorize(Roles = "Admin")]
+
+@if (loading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid my-5">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-10 col-xxl-9">
+                <div class="row">
+                    <div class="col-10">
+                        <h3>Methods</h3>
+                    </div>
+                    <div class="col-2 d-flex justify-content-end">
+                        <button type="button" @onclick="AddMethod" class="btn green-btn px-2 w-auto">Add</button>
+                    </div>
+                </div>
+                <table class="table table-hover table-bordered my-4 text-center">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var method in methods)
+                        {
+                            <tr class="align-middle">
+                                <td><img src="@method.PictureUrl" class="img-small" /> </td>
+                                <td>@method.Name</td>
+                                <td class="text-end">
+                                    <button type="button" @onclick="() => EditMethod(method.Id)" class="btn gray-btn m-1 px-2 w-auto">Edit</button>
+                                    <button type="button" @onclick="() => DeleteMethod(method.Id)" class="btn btn-danger  m-1 px-2 w-auto">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Method> methods = [];
+    private bool loading = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            methods = await MethodApiService.GetMethodsAsync();
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AddMethod()
+    {
+        NavigationManager.NavigateTo($"/admin/add-method");
+    }
+
+    private void EditMethod(string id)
+    {
+        NavigationManager.NavigateTo($"/admin/edit-method/{id}");
+    }
+
+    private async Task DeleteMethod(string id)
+    {
+        await MethodApiService.DeleteMethodAsync(id);
+        methods = await MethodApiService.GetMethodsAsync();
+    }
+}

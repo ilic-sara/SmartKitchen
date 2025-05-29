@@ -1,0 +1,18 @@
+﻿@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<button class="btn green-btn m-2" @onclick="() => NavigateToPage()">@Text</button>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Path { get; set; } = string.Empty;
+
+    private void NavigateToPage()
+    {
+        NavigationManager.NavigateTo(Path);
+
+    }
+}
