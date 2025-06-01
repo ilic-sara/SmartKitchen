@@ -1,0 +1,48 @@
+name: Trigger auto deployment for smart-kitchen-apis
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/smart-kitchen-apis-AutoDeployTrigger-388820f9-e367-4495-9d74-4fb2fd6ab5de.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.SMARTKITCHENAPIS_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.SMARTKITCHENAPIS_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.SMARTKITCHENAPIS_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}WebAPIs
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: smartkitchenacr.azurecr.io
+          registryUsername: ${{ secrets.SMARTKITCHENAPIS_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.SMARTKITCHENAPIS_REGISTRY_PASSWORD }}
+          containerAppName: smart-kitchen-apis
+          resourceGroup: SmartKitchen
+          imageToBuild: smartkitchenacr.azurecr.io/smart-kitchen-apis:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
