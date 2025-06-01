@@ -35,7 +35,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: SarasKitchenApp/SarasKitchenApp
-          _dockerfilePathKey_: SarasKitchenApp/SarasKitchenApp/Dockerfile
+          dockerfilePath: SarasKitchenApp/SarasKitchenApp/Dockerfile
           registryUrl: smartkitchenacr.azurecr.io
           registryUsername: ${{ secrets.SMARTKITCHENWEBAPP_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.SMARTKITCHENWEBAPP_REGISTRY_PASSWORD }}
