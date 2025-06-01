@@ -42,6 +42,4 @@ jobs:
           containerAppName: smart-kitchen-webapp
           resourceGroup: SmartKitchen
           imageToBuild: smartkitchenacr.azurecr.io/smart-kitchen-webapp:${{ github.sha }}
-
-
-
+          builder: docker
